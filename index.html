@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>AR Ball</title>
+
+    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+    
+    <style>
+        body { margin: 0; font-family: sans-serif; }
+        .container { width: 100vw; height: 100vh; position: relative; }
+        a-scene { width: 100%; height: 100%; display: none; }
+        a-scene.visible { display: block; }
+
+        /* ローダー画面のスタイル */
+        #loader {
+            position: absolute; top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: #121212; color: white;
+            display: flex; justify-content: center; align-items: center;
+            flex-direction: column; text-align: center;
+            z-index: 10000;
+            transition: opacity 0.8s ease;
+            cursor: pointer;
+        }
+        #loader.hidden { opacity: 0; pointer-events: none; }
+        #loader h1 {
+            font-size: clamp(4rem, 20vw, 8rem);
+            font-weight: bold; margin: 0; letter-spacing: 0.1em;
+            transition: transform 0.5s ease;
+        }
+        #loader.is-loading h1 { transform: scale(0.8); }
+        #loader p {
+            font-weight: 300; opacity: 0;
+            margin-top: 20px; letter-spacing: 0.2em; font-size: 14px;
+            animation: fadeIn 2s 1s forwards;
+        }
+        @keyframes fadeIn { to { opacity: 0.7; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="loader">
+            <h1>AR Ball</h1>
+            <p id="loader-message">TAP TO START</p>
+        </div>
+
+        <a-scene id="ar-scene" mindar-image="imageTargetSrc: ./mind/targets.mind; autoStart: false;" embedded vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: true" color-space="sRGB">
+            
+            <a-assets>
+                <audio id="ball-touch-sound" src="./audio/ball-touch.mp3" preload="auto"></audio>
+            </a-assets>
+
+            <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+
+            <a-entity id="ball-marker" mindar-image-target="targetIndex: 0">
+                <a-sphere id="ar-ball" color="red" radius="0.15" position="0 0.15 0"
+                    animation="property: rotation; to: 0 360 0; loop: true; dur: 4000; easing: linear;">
+                </a-sphere>
+            </a-entity>
+        </a-scene>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // HTML要素の取得
+            const loader = document.getElementById('loader');
+            const loaderMessage = document.getElementById('loader-message');
+            const sceneEl = document.getElementById('ar-scene');
+            const arBall = document.getElementById('ar-ball');
+            const ballTouchSound = document.getElementById('ball-touch-sound');
+
+            // --- 1. AR体験の開始 ---
+            const startExperience = async () => {
+                loader.classList.add('is-loading');
+                loaderMessage.textContent = 'STARTING AR...';
+                try {
+                    await sceneEl.systems['mindar-image-system'].start();
+                    loader.classList.add('hidden');
+                    sceneEl.classList.add('visible');
+                } catch (e) {
+                    loader.classList.remove('is-loading');
+                    loaderMessage.innerHTML = `ERROR<br><small>ARの起動に失敗しました</small>`;
+                    console.error(e);
+                }
+            };
+            loader.addEventListener('click', startExperience, { once: true });
+
+            // --- 2. ARボールをタップした時の音 ---
+            arBall.addEventListener('click', () => {
+                ballTouchSound.currentTime = 0;
+                ballTouchSound.play();
+                console.log("Play Ball Touch Sound");
+            });
+        });
+    </script>
+</body>
+</html>
